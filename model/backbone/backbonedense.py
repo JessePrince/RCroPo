@@ -1,8 +1,9 @@
 from torch import nn
-from model.backbone.convblk import ConvNextBLK3D
+from convblk import ConvNextBLK3D
+import torch
 
 class Backbone3D(nn.Module):
-    def __init__(self, in_channels, depths=[3, 3, 9, 3], width=[96, 192, 384, 768]):
+    def __init__(self, in_channels, depths=[6, 18], width=[96, 192]):
         super().__init__()
         self.n_stages = len(depths)
         self.depths = depths
@@ -61,10 +62,12 @@ class Backbone3D(nn.Module):
         in2 = vert
         pyramid = []
         for i in range(self.n_stages):
+            if i > 0: # store the feature map before down sample
+                catFeature = torch.cat((in1, in2), dim=1) # pre concate
+                pyramid.append(catFeature)
+            
             in1 = self.downSampler1[i](in1) # update in1 with down sampler
             in2 = self.downSampler2[i](in2)
-            if self.n_stages > 0: # store the feature map after down sample
-                pyramid.append([in1, in2])
                 
             f11 = in1 # hold in1, use f11 as forward feature
             f22 = in2
@@ -80,6 +83,14 @@ class Backbone3D(nn.Module):
                 
         out1 = self.norm1(in1)
         out2 = self.norm2(in2)
-        pyramid.append([out1, out2])
+        pyramid.append(torch.cat((out1, out2), dim=1))
         
         return pyramid
+    
+m = Backbone3D(in_channels = 3)
+
+x = torch.randn(1, 3, 8, 256, 256)
+y = torch.randn(1, 3, 8, 256, 256)
+out = m(x, y)
+for i in out:
+    print(i.shape)

@@ -1,5 +1,4 @@
 from torch import nn
-from timm.models.layers import DropPath
 
 class ConvNextBLK3D(nn.Module):
     def __init__(self, dim, drop_path=0.):
@@ -9,7 +8,7 @@ class ConvNextBLK3D(nn.Module):
         self.pwconv1 = nn.Conv3d(dim, 4 * dim, kernel_size=1) # pointwise/1x1 convs
         self.act = nn.GELU()
         self.pwconv2 = nn.Conv3d(4 * dim, dim, kernel_size=1)
-        self.dropPath = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.dropPath = nn.Dropout3d(drop_path) if drop_path > 0. else nn.Identity()
         
     def ResConnect(self, x, y):
         return x + y 
